@@ -1,61 +1,57 @@
 <script>
-  import { defineComponent } from "vue";
-  import axios from "axios";
+import { ref, computed } from "vue";
+import axios from "axios";
 
-  export default defineComponent({
-    name: "Weather",
-    data() {
-      return {
-        city: "",
-        error: "",
-        weather: null,
-      };
-    },
-    methods: {
-      getWeather() {
-        if (this.city.trim().length < 3) {
-          this.error = "Too few characters";
-          this.city = "";
-          this.weather = "";
-          return false;
-        } else {
-          return axios
-            .get(
-              `https://api.openweathermap.org/data/2.5/weather?q=${this.city}&units=metric&appid=c40ad0a49abf7f15d606b0bce470a069`
-            )
-            .then((res) => (this.weather = res.data))
-            .then(() => {
-              this.city = "";
-              this.error = "";
-            })
-            .catch((err) => {
-              this.city = "";
-              this.error = err.message;
-            });
-        }
-      },
-    },
-    computed: {
-      cityName() {
-        return this.weather.name;
-      },
+export default {
+  name: "Weather",
+  setup() {
+    const city = ref("");
+    const error = ref("");
+    const weather = ref(null);
 
-      temp() {
-        return this.weather.main.temp > 0
-          ? `Temp: +${Math.round(this.weather.main.temp)} °C`
-          : `Temp: ${Math.round(this.weather.main.temp)} °C`;
-      },
-      feelsLike() {
-        return this.weather.main.feels_like > 0
-          ? `Feels like: +${Math.round(this.weather.main.feels_like)} °C`
-          : `Feels like: ${Math.round(this.weather.main.feels_like)} °C`;
-      },
+    const getWeather = () => {
+      if (city.value.trim().length < 3) {
+        error.value = "Too few characters";
+        city.value = "";
+        weather.value = "";
+        return false;
+      } else {
+        return axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${city.value}&units=metric&appid=c40ad0a49abf7f15d606b0bce470a069`)
+        .then((res)  => {
+          weather.value = res.data;
+          city.value = "";
+          error.value = "";
+        })
+        .catch ((err) => {
+          city.value = "";
+          error.value = err.message;
+        });
+      }
+    };
 
-      description() {
-        return this.weather.weather[0].description;
-      },
-    },
-  });
+    const cityName = computed(() => {
+      return weather.value ? weather.value.name : "";
+    });
+
+    const temp = computed(() => {
+      return  weather.value.main.temp > 0
+          ? `Temp: +${Math.round(weather.value.main.temp)} °C`
+          : `Temp: ${Math.round(weather.value.main.temp)} °C`
+    });
+
+    const feelsLike = computed(() => {
+      return weather.value.main.feels_like > 0
+          ? `Feels like: +${Math.round(weather.value.main.feels_like)} °C`
+          : `Feels like: ${Math.round(weather.value.main.feels_like)} °C`
+    });
+
+    const description = computed(() => {
+      return weather.value ? weather.value.weather[0].description : "";
+    });
+
+    return { city, error, weather, getWeather, cityName, temp, feelsLike, description };
+  },
+};
 </script>
 
 <template>
@@ -65,7 +61,7 @@
     <input type="text" v-model="city" placeholder="Enter city" />
     <button :disabled="city === ''" @click="getWeather">Get weather</button>
     <p class="error" v-if="error">{{ error }}</p>
-    <div class="weather" v-if="weather">
+    <div class="weather" v-if="weather && !error">
       <p>{{ cityName }}</p>
       <p>{{ temp }}</p>
       <p>{{ feelsLike }}</p>
